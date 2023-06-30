@@ -1,0 +1,47 @@
+import { FormEvent, useState, useRef } from "react"
+
+import { PasteClipboard } from "iconoir-react"
+import { toast } from "sonner"
+import { useAuthStore } from "../../stores/AuthStore"
+import Button from "../ui/Button"
+import { useBookmarkStore } from "../../stores/BookMarkStore"
+
+const AddBookmark = () => {
+  const { fetch: getBookmarks, add: createBookmark, loading, setSelectedTag } = useBookmarkStore(state => ({ fetch: state.fetch, add: state.add, loading: state.loading, setSelectedTag: state.setSelectedTag }))
+  const session = useAuthStore(state => state.session)
+  const userId = session?.user.id
+  const [ url, setUrl ] = useState<string>("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!userId) return
+    await createBookmark(url, userId)
+    
+    toast.success("Bookmark added successfully!")
+    getBookmarks(userId)
+    setUrl("")
+    setSelectedTag("")
+  }
+
+  const handlePaste = async () => {
+    const clipboardText = await navigator.clipboard.readText()
+    setUrl(clipboardText)
+    inputRef.current?.focus()
+  }
+
+  return (
+    <form className="flex justify-center w-full gap-2" onSubmit={handleCreate}>
+      <div className="relative w-full max-w-sm">
+        <input ref={inputRef} className="w-full py-2 pl-4 pr-10 bg-transparent border rounded-md backdrop-blur-lg border-zinc-700 focus:border-zinc-500 focus:outline-none" type="text"
+        value={url} 
+        onChange={(e) => setUrl(e.target.value)}
+         placeholder="https://" />
+        <PasteClipboard className="absolute duration-200 cursor-pointer right-3 top-2 text-zinc-700 hover:text-zinc-400" width={18} onClick={handlePaste} />
+      </div>
+      <Button type="submit" disabled={loading}>Add</Button>
+    </form>
+  )
+}
+
+export default AddBookmark
